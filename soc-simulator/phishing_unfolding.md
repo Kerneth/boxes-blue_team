@@ -1,6 +1,13 @@
-# Triage Log – Phishing Unfolding
+# Simulator SOC - Phishing Unfolding
 
 
+This report documents the investigation of multiple alerts from a SOC Simulator of TryHackMe.  
+While most alerts were classified as low severity spam or false positives, a detailed analysis revealed a phishing campaign that led to endpoint compromise, post-exploitation activity, and data exfiltration attempts.
+
+The objective of this report is to document the analyst’s investigation process, evidence correlation, and incident response decisions.
+
+
+### Triage Log – Phishing
 
 This document summarizes all low severity phishing-related alerts observed during the SOC Simulator run.
 
@@ -14,19 +21,23 @@ This document summarizes all low severity phishing-related alerts observed durin
 | 15:00:32 | 1017 | Suspicious email | stone@fashionindustrytrends.xyz | armaan.terry@tryhatme.com | Time Traveling Hat Adventure Explore Ancient Lands for Cheap | True Positive (Spam) | Low | Marketing spam, suspicious sender domain |
 | 15:01:04 | 1018 | Suspicious email | comb@hatventuresworldwide.online | liam.espinoza@tryhatme.com | Win a Trip to Hat Disneyland Magical Memories Await | True Positive (Spam | Low | Marketing spam | 
 
-## Summary
+### Summary
 
 - All alerts were classified as **True Positive – Spam / Phishing**  
 - No user interaction or compromise observed for these alerts  
 - Detection rule requires tuning to reduce noise from marketing spam
 
-## Recommended Actions
+### Recommended Actions
 
 - Block sender domains at the email gateway  
 - Tune phishing detection rules to reduce false positives  
 - Provide user awareness reminder
 
+---
+
 With this SOC simulator run, there was also some legetimate process. This document sumurizes all false positive alerts due to process.
+
+### Triage Log - Normal process
 
 | Time (UTC) | Alert ID | Host | Parent Process | Child Process | Command Line | Verdict | Severity | Notes |
 |-----------|----------|------|----------------|---------------|--------------|---------|----------|-------|
@@ -43,18 +54,19 @@ With this SOC simulator run, there was also some legetimate process. This docume
 | 15:01:25 | 1019 | win-3460 | svchost.exe | taskhostw.exe | taskhostw.exe KEYROAMING | False Positive | Low | Normal Windows user profile operation |
 | 15:04:35 | 1021 | win-3451 | svchost.exe | taskhostw.exe | taskhostw.exe KEYROAMING | False Positive | Low | Normal Windows user profile operation |
 
-## Summary
+### Summary
 
 - All alert were classified as **False Positive**
 - No user interaction or compromise observed for these alerts
 - Detection rule requires tuning to reduce noise from legetimate process
 
-## Recommended Actions 
+### Recommended Actions 
 
 - Tune legetimate process detection rules to reduce false positives
 
 _____________________________________________________________________________________________________________________________________________________________________________________________
 
+### Suspicious alert
 
 Among these alerts with low severity, there was one very suspicious
 
@@ -89,7 +101,7 @@ Jan 19th 2026 at 15:05
 
 #### Reason for classifying as True Positive : 
 
-The lunch of the process "powershell.exe" by the file path C:\Users\micheal.ascot\Downloads\PowerView.ps1 is abnormal. After investigation it come from a spam send to micheal Ascot.
+The launch of the "powershell.exe" process from the Downloads directory is abnormal. After investigation it originated from a phishing email sent to the compromised user.
 
 #### Reason for escalating the Alert : 
 
@@ -124,7 +136,7 @@ After that, 3 more medium alerts were popping. if we analyze them it's all prepa
 
 It can access distant files like they were local. 
 
-![Q6](images/exfiltration1.png)
+![Q6](images/staging.png)
 
 #### Staging 
 
@@ -132,7 +144,7 @@ It can access distant files like they were local.
 
 After searching, robocopy is a command-line directory replication tool. The sensitive files are copied from the server, then they are stored for exfiltration 
 
-![Q7](images/exfiltration2.png)
+![Q7](images/staging2.png)
 
 #### Cleanup 
 
@@ -140,7 +152,7 @@ After searching, robocopy is a command-line directory replication tool. The sens
 
 The network drive is deleted to reduce traces.
 
-![Q8](images/exfiltration3.png)
+![Q8](images/staging3.png)
 
 #### Archive Creation
 
@@ -149,4 +161,35 @@ File created
 
 The final staging is the creation of the archive exfilt8me.zip inside the directory. It contains the collected files.
 
-![Q9](images/exfiltration4.png)
+![Q9](images/staging4.png)
+
+---
+
+Finally, 10 alerts like this appeared. This is the phase of exfiltration.
+
+![Q10](images/exfiltration1.png)
+
+We can observe :
+
+process.name: nslookup.exe
+parent: powershell.exe
+Sub-domain encoded
+Domain unknown (haz4rdw4re.io)
+
+That's not normal behavior and it come from the same compromised user.
+
+--> Nslookup is used to perform DNS queries with little chunk of encoded data. And it's sent to an external server controlled by the attacker (haz4rdw4re.io).
+
+After another investigation we discover that a PowerShell command downloaded and executed powercat.ps1.
+
+So we can conclude to a reverse shell connection to an external host, allowing remote command execution.
+This behavior is consistent with a temporary backdoor providing remote access to the attacker.
+
+![Q11](images/exfiltration2.png)
+
+---
+
+This investigation confirms a successful phishing attack leading to the execution of malicious PowerShell scripts, network share access, staged data collection, DNS-based exfiltration, and the establishment of a temporary reverse shell.
+The incident demonstrates how low severity alerts can escalate into a full compromise when correlated across email and endpoint.
+
+This case highlights the importance of alert triage, timeline correlation, and early escalation to prevent data loss.
