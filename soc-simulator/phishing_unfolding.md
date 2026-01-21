@@ -67,13 +67,86 @@ An investigation with splunk is necessary. The first is to find this alert on sp
 Then because of the time and what wause this activation, we can determine what cause this activation of powershell
 
 ![Q2](images/powershell_begin_splunk2.png)
-![Q2](images/powershell_begin_splunk3.png)
-![Q2](images/powershell_begin_splunk4.png)
-![Q2](images/powershell_begin_splunk5.png)
+![Q3](images/powershell_begin_splunk3.png)
+![Q4](images/powershell_begin_splunk4.png)
+![Q5](images/powershell_begin_splunk5.png)
 
 The origin of the compromision is a spam with some malware as an attachment who have been open and downloaded. 
-Before escalated the spam we have to report the alert of the activation of powershell.
+The alert of the activation of powershell was reported and escalted before the spam, due to the urgency.
 
-Time of activity: Jan 19th 2026 at 15:05
+---
 
-List of Affected Entities: win-3450
+#### Time of activity: 
+
+Jan 19th 2026 at 15:05
+
+#### List of Affected Entities: 
+
+- Host: win-3450
+- User: michael.ascot
+- Process: powershell.exe
+- Script: PowerView.ps1
+
+#### Reason for classifying as True Positive : 
+
+The lunch of the process "powershell.exe" by the file path C:\Users\micheal.ascot\Downloads\PowerView.ps1 is abnormal. After investigation it come from a spam send to micheal Ascot.
+
+#### Reason for escalating the Alert : 
+
+The malware can lunch powershell.exe on the ceo's computer so it can access important files.
+
+#### Recommended Remediation Actions :
+
+- Immediately isolate the affected host (win-3450) from the network  
+- Terminate the malicious PowerShell process  
+- Remove the malicious script `PowerView.ps1` from the system  
+- Reset credentials for the affected user  
+- Block the sender domain and attachment hash at the email gateway  
+- Conduct a full endpoint scan to identify additional malicious artifacts  
+- Review logs for lateral movement or further post-exploitation activity
+
+#### - List of Attack Indicators :
+
+- Phishing email with malicious attachment `ImportantInvoice-Febrary.zip`
+- Execution of a disguised shortcut file `invioce.pdf.lnk`
+- Creation of PowerShell script `__PSScriptPolicyTest_tuwnh53e.jfw.ps1`
+- Creation and execution of `PowerView.ps1`
+- Abnormal execution of `powershell.exe` from the Downloads directory
+- PowerShell used for post-exploitation reconnaissance
+
+---
+
+After that, 3 more medium alerts were popping. if we analyze them it's all preparation for the exfiltration.
+
+#### Network Share mapping
+
+"net.exe use Z: \FILESERV-01\SSF-FinancialRecords" The attacker mapped a network drive (Z:) with net.exe. 
+
+It can access distant files like they were local. 
+
+![Q6](images/exfiltration1.png)
+
+#### Staging 
+
+"robocopy.exe Z:\ C:\Users\michael.ascot\downloads\exfiltration /E" 
+
+After searching, robocopy is a command-line directory replication tool. The sensitive files are copied from the server, then they are stored for exfiltration 
+
+![Q7](images/exfiltration2.png)
+
+#### Cleanup 
+
+"net.exe use Z: /delete" 
+
+The network drive is deleted to reduce traces.
+
+![Q8](images/exfiltration3.png)
+
+#### Archive Creation
+
+File created
+"C:\Users\michael.ascot\Downloads\exfiltration\exfilt8me.zip"
+
+The final staging is the creation of the archive exfilt8me.zip inside the directory. It contains the collected files.
+
+![Q9](images/exfiltration4.png)
