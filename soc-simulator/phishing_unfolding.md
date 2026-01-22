@@ -172,8 +172,11 @@ Finally, 10 alerts like this appeared. This is the phase of exfiltration.
 We can observe :
 
 process.name: nslookup.exe
+
 parent: powershell.exe
+
 Sub-domain encoded
+
 Domain unknown (haz4rdw4re.io)
 
 That's not normal behavior and it come from the same compromised user.
